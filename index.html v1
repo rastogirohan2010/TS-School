@@ -1,1092 +1,1710 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- =========================================================
+       TS SCHOOL — Competition Build
+       Single-file app (index.html) + config.js (local only)
+       Requires: Firebase Firestore enabled
+       ========================================================= -->
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TS School</title>
 
-  <!-- Firebase (browser-only, no installs) -->
+  <!-- Firebase (browser-only) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- Your secrets/config live here (NOT committed publicly) -->
+  <!-- Local config (DO NOT commit publicly if repo is public) -->
   <script src="./config.js"></script>
 
   <style>
-    :root{
-      --bg:#f7fafc;
-      --panel:#ffffff;
-      --panel2:#f1f5f9;
-      --text:#0b1220;
-      --text2:#334155;
-      --muted:#64748b;
-      --border:#e5e7eb;
-      --primary:#2563eb;
-      --primary2:#1d4ed8;
-      --danger:#ef4444;
-      --ok:#16a34a;
-      --shadow:0 12px 40px rgba(2,6,23,.08);
-      --radius:18px;
-      --focus:0 0 0 4px rgba(37,99,235,.18);
-      --chip:rgba(2,6,23,.06);
-    }
-    [data-theme="dark"]{
-      --bg:#070b14;
-      --panel:#0b1220;
-      --panel2:#0f172a;
-      --text:#e9f0ff;
-      --text2:#c7d2fe;
-      --muted:#9aa7bf;
-      --border:rgba(148,163,184,.20);
-      --primary:#3b82f6;
-      --primary2:#60a5fa;
-      --danger:#fb7185;
-      --ok:#4ade80;
-      --shadow:0 20px 70px rgba(0,0,0,.55);
-      --focus:0 0 0 4px rgba(96,165,250,.24);
-      --chip:rgba(255,255,255,.08);
+    /* =========================================================
+       THEME TOKENS
+       ========================================================= */
+    :root {
+      --bg: #f7fafc;
+      --panel: #ffffff;
+      --panel2: #f1f5f9;
+      --text: #0b1220;
+      --text2: #334155;
+      --muted: #64748b;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --primary2: #1d4ed8;
+      --danger: #ef4444;
+      --ok: #16a34a;
+
+      --radius: 18px;
+      --radius2: 14px;
+
+      --shadow: 0 12px 40px rgba(2, 6, 23, 0.08);
+      --shadow2: 0 18px 70px rgba(2, 6, 23, 0.10);
+
+      --focus: 0 0 0 4px rgba(37, 99, 235, 0.18);
+      --chip: rgba(2, 6, 23, 0.06);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
     }
 
-    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;}
-    body{margin:0;background:var(--bg);color:var(--text);}
-    h1,h2,h3,h4{margin:0;color:var(--text);letter-spacing:.2px;}
-    p,small,li,label{color:var(--text2);}
-    .muted{color:var(--muted);font-weight:850;}
-    a{color:inherit}
+    [data-theme="dark"] {
+      --bg: #070b14;
+      --panel: #0b1220;
+      --panel2: #0f172a;
+      --text: #e9f0ff;
+      --text2: #c7d2fe;
+      --muted: #9aa7bf;
+      --border: rgba(148, 163, 184, 0.22);
+      --primary: #3b82f6;
+      --primary2: #60a5fa;
+      --danger: #fb7185;
+      --ok: #4ade80;
 
-    button{
-      border:1px solid var(--border);
-      background:var(--panel);
-      color:var(--text);
-      padding:10px 14px;
-      border-radius:999px;
-      font-weight:950;
-      cursor:pointer;
-      transition:.12s;
-      display:inline-flex;align-items:center;gap:8px;
-    }
-    button:hover{transform:translateY(-1px);}
-    button:active{transform:translateY(0px);}
-    button:focus{outline:none;box-shadow:var(--focus);}
-    button.primary{background:var(--primary);border:none;color:white;}
-    button.danger{background:var(--danger);border:none;color:white;}
-    button.ghost{background:transparent;}
-    button.small{padding:8px 10px;font-weight:950;}
-    button:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+      --shadow: 0 20px 70px rgba(0, 0, 0, 0.55);
+      --shadow2: 0 28px 90px rgba(0, 0, 0, 0.55);
 
-    input,textarea,select{
-      width:100%;
-      padding:12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      background:var(--panel);
-      color:var(--text);
-      font-weight:850;
-    }
-    textarea{min-height:110px;resize:vertical;}
-    hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
-
-    /* Top Nav */
-    nav{
-      display:flex;justify-content:space-between;align-items:center;
-      padding:18px 36px;border-bottom:1px solid var(--border);
-      position:sticky;top:0;background:rgba(255,255,255,.72);backdrop-filter:blur(10px);
-      z-index:10;
-    }
-    [data-theme="dark"] nav{background:rgba(7,11,20,.72);}
-    .brand{display:flex;gap:12px;align-items:center;}
-    .logo{
-      width:40px;height:40px;border-radius:14px;
-      background:linear-gradient(135deg,var(--primary),var(--primary2));
-      display:grid;place-items:center;color:white;font-weight:980;
-      box-shadow:var(--shadow);
-    }
-    .brand-title{display:flex;flex-direction:column;}
-    .brand-title h1{font-size:18px;font-weight:980;}
-    .brand-title small{font-weight:900;color:var(--muted);margin-top:2px;}
-    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-    .pill{
-      display:inline-flex;gap:8px;align-items:center;
-      padding:10px 14px;border-radius:999px;border:1px solid var(--border);
-      background:var(--panel);font-weight:980;
+      --focus: 0 0 0 4px rgba(96, 165, 250, 0.24);
+      --chip: rgba(255, 255, 255, 0.08);
     }
 
-    /* Hero */
-    .hero{
-      height:240px;padding:54px 36px;
+    /* =========================================================
+       BASE
+       ========================================================= */
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    a { color: inherit; }
+    h1, h2, h3, h4 { margin: 0; color: var(--text); letter-spacing: 0.2px; }
+    p, small, label, li { color: var(--text2); }
+
+    .muted { color: var(--muted); font-weight: 850; }
+    .mono { font-family: var(--mono); }
+
+    /* =========================================================
+       BUTTONS / INPUTS
+       ========================================================= */
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 950;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0px); }
+    button:focus { outline: none; box-shadow: var(--focus); }
+
+    button.primary { background: var(--primary); border: none; color: white; }
+    button.primary:hover { background: var(--primary2); }
+    button.danger { background: var(--danger); border: none; color: white; }
+    button.ghost { background: transparent; }
+    button.chip { background: var(--chip); border: 1px solid var(--border); }
+    button.small { padding: 8px 10px; font-weight: 950; }
+
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    textarea { min-height: 110px; resize: vertical; }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    /* =========================================================
+       NAV + HERO
+       ========================================================= */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 36px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(10px);
+      z-index: 999;
+    }
+    [data-theme="dark"] nav { background: rgba(7, 11, 20, 0.72); }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 980;
+      box-shadow: var(--shadow);
+    }
+    .brand-title { display: flex; flex-direction: column; }
+    .brand-title h1 { font-size: 18px; font-weight: 990; }
+    .brand-title small { font-weight: 900; color: var(--muted); margin-top: 2px; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .pill {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      font-weight: 980;
+    }
+
+    .hero {
+      height: 240px;
+      padding: 54px 36px;
       background:
-        linear-gradient(to right, rgba(255,255,255,.88), rgba(255,255,255,.15)),
+        linear-gradient(to right, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.15)),
         url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2200&q=80");
-      background-size:cover;background-position:center;
-      border-bottom:1px solid var(--border);
+      background-size: cover;
+      background-position: center;
+      border-bottom: 1px solid var(--border);
     }
-    [data-theme="dark"] .hero{
+    [data-theme="dark"] .hero {
       background:
-        linear-gradient(to right, rgba(7,11,20,.86), rgba(7,11,20,.28)),
+        linear-gradient(to right, rgba(7, 11, 20, 0.86), rgba(7, 11, 20, 0.28)),
         url("https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2200&q=80");
-      background-size:cover;background-position:center;
+      background-size: cover;
+      background-position: center;
     }
-    .hero h2{font-size:44px;font-weight:990;}
-    .hero .hero-sub{margin-top:10px;font-weight:850;color:var(--muted);max-width:760px;}
-
-    main{padding:28px 36px 50px;}
-    .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
-    .tab{
-      padding:10px 14px;border-radius:999px;border:1px solid var(--border);
-      background:var(--panel);cursor:pointer;font-weight:980;
-      display:flex;gap:10px;align-items:center;user-select:none;
+    .hero h2 {
+      font-size: 44px;
+      font-weight: 990;
     }
-    .tab.active{background:var(--primary);color:white;border:none;}
-    .section{display:none;}
-    .section.active{display:block;}
-
-    .card{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:18px;
-      margin-bottom:18px;
-    }
-    .card h3{display:flex;align-items:center;gap:10px;font-weight:990;margin-bottom:10px;}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
-    @media(max-width:980px){
-      nav,.hero,main{padding-left:16px;padding-right:16px;}
-      .grid2,.grid3{grid-template-columns:1fr;}
+    .hero .hero-sub {
+      margin-top: 10px;
+      font-weight: 850;
+      color: var(--muted);
+      max-width: 760px;
     }
 
-    /* “In Progress” badge */
-    .status{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 10px;border-radius:999px;
-      background:#fde68a;color:#92400e;font-weight:980;font-size:12px;
-      border:1px solid rgba(146,64,14,.25);
-      margin-top:10px;
-    }
-    [data-theme="dark"] .status{
-      background:rgba(250,204,21,.18);
-      color:#fde68a;border:1px solid rgba(253,230,138,.28);
+    /* =========================================================
+       MAIN + TABS
+       ========================================================= */
+    main { padding: 28px 36px 50px; }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
     }
 
-    /* Embed Panels */
-    .embed-wrap{
-      border:1px solid var(--border);
-      border-radius:16px;
-      overflow:hidden;
-      background:var(--panel2);
-      height:72vh;
+    .tab {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      cursor: pointer;
+      font-weight: 980;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      user-select: none;
     }
-    .embed-top{
-      display:flex;justify-content:space-between;align-items:center;
-      padding:10px 12px;border-bottom:1px solid var(--border);
-      background:var(--panel);
-      gap:10px;
-    }
-    .embed-left{display:flex;align-items:center;gap:10px;font-weight:990;}
-    .dotbar{display:flex;gap:6px;}
-    .dot{width:10px;height:10px;border-radius:999px;}
-    .dot.r{background:#ef4444;}
-    .dot.y{background:#f59e0b;}
-    .dot.g{background:#22c55e;}
-    .embed-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-    iframe{
-      width:100%;
-      height:calc(72vh - 56px);
-      border:none;
-      background:var(--panel2);
-    }
-    .embed-fallback{
-      padding:12px;border-top:1px solid var(--border);
-      display:flex;justify-content:space-between;align-items:center;gap:12px;
-      background:var(--panel);
-      flex-wrap:wrap;
-    }
-    .embed-fallback .left{display:flex;flex-direction:column;gap:4px;}
-    .embed-fallback strong{font-weight:990;}
-    .embed-fallback small{color:var(--muted);font-weight:900;}
+    .tab.active { background: var(--primary); color: white; border: none; }
 
-    /* Messages */
-    .messages-layout{display:grid;grid-template-columns:330px 1fr;gap:18px;}
-    @media(max-width:980px){.messages-layout{grid-template-columns:1fr;}}
-    .list{
-      border:1px solid var(--border);
-      border-radius:16px;
-      overflow:hidden;
-      background:var(--panel2);
-    }
-    .list-header{
-      padding:12px;border-bottom:1px solid var(--border);
-      display:flex;justify-content:space-between;align-items:center;
-      background:var(--panel);
-    }
-    .list-body{max-height:60vh;overflow:auto;}
-    .item{
-      padding:12px 12px;
-      display:flex;justify-content:space-between;align-items:center;
-      cursor:pointer;font-weight:980;
-    }
-    .item:hover{background:rgba(148,163,184,.12);}
-    .item.active{background:var(--primary);color:white;}
-    .badge{
-      min-width:22px;height:22px;padding:0 7px;border-radius:999px;
-      background:var(--danger);color:white;font-size:12px;font-weight:990;
-      display:inline-flex;align-items:center;justify-content:center;
-    }
-    .chat{
-      border:1px solid var(--border);
-      border-radius:16px;
-      background:var(--panel2);
-      overflow:hidden;
-      display:flex;flex-direction:column;
-      height:72vh;
-    }
-    .chat-header{
-      padding:12px;border-bottom:1px solid var(--border);
-      background:var(--panel);
-      display:flex;justify-content:space-between;align-items:center;gap:10px;
-      flex-wrap:wrap;
-    }
-    .chat-header .title{font-weight:990;}
-    .chat-header small{color:var(--muted);font-weight:900;}
-    .chat-body{flex:1;overflow:auto;padding:14px;}
-    .msg{
-      max-width:70%;
-      margin-bottom:10px;
-      padding:10px 12px;
-      border-radius:14px;
-      background:rgba(148,163,184,.16);
-      font-weight:850;
-    }
-    .msg.me{margin-left:auto;background:var(--primary);color:white;}
-    .msg .meta{display:block;margin-top:6px;font-size:11px;opacity:.9;font-weight:900;}
-    .chat-input{
-      display:flex;gap:10px;padding:12px;border-top:1px solid var(--border);background:var(--panel);
-    }
-    .chat-input input{flex:1}
+    .section { display: none; }
+    .section.active { display: block; }
 
-    /* Tasks */
-    .task{
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:12px;
-      background:var(--panel2);
-      display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
-      margin-bottom:10px;
+    /* =========================================================
+       CARDS / GRIDS
+       ========================================================= */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 18px;
     }
-    .task strong{display:block;font-weight:990;color:var(--text);}
-    .task small{display:block;color:var(--muted);font-weight:900;margin-top:4px;}
 
-    /* Toast */
-    .toastWrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:10px;z-index:9999;}
-    .toast{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:12px 14px;
-      box-shadow:var(--shadow);
-      font-weight:990;
-      max-width:360px;
+    .card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 990;
+      margin-bottom: 10px;
     }
-    .toast small{display:block;margin-top:4px;color:var(--muted);font-weight:850;}
 
-    /* Small helper */
-    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-    .chipbtn{background:var(--chip);border:1px solid var(--border);}
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+    @media(max-width: 980px) {
+      nav, .hero, main { padding-left: 16px; padding-right: 16px; }
+      .grid2, .grid3 { grid-template-columns: 1fr; }
+    }
+
+    /* =========================================================
+       STATUS BADGE
+       ========================================================= */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fde68a;
+      color: #92400e;
+      font-weight: 980;
+      font-size: 12px;
+      border: 1px solid rgba(146, 64, 14, 0.25);
+      margin-top: 10px;
+    }
+    [data-theme="dark"] .status {
+      background: rgba(250, 204, 21, 0.18);
+      color: #fde68a;
+      border: 1px solid rgba(253, 230, 138, 0.28);
+    }
+
+    /* =========================================================
+       EMBEDS
+       ========================================================= */
+    .embed-wrap {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--panel2);
+      height: 72vh;
+    }
+    .embed-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .embed-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 990;
+    }
+    .dotbar { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 999px; }
+    .dot.r { background: #ef4444; }
+    .dot.y { background: #f59e0b; }
+    .dot.g { background: #22c55e; }
+
+    .embed-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    iframe {
+      width: 100%;
+      height: calc(72vh - 56px);
+      border: none;
+      background: var(--panel2);
+    }
+
+    .embed-fallback {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: var(--panel);
+      flex-wrap: wrap;
+    }
+    .embed-fallback .left { display: flex; flex-direction: column; gap: 4px; }
+    .embed-fallback strong { font-weight: 990; }
+    .embed-fallback small { color: var(--muted); font-weight: 900; }
+
+    /* =========================================================
+       MESSAGES
+       ========================================================= */
+    .messages-layout { display: grid; grid-template-columns: 360px 1fr; gap: 18px; }
+    @media(max-width: 980px) { .messages-layout { grid-template-columns: 1fr; } }
+
+    .list {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--panel2);
+    }
+    .list-header {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .list-body { max-height: 60vh; overflow: auto; }
+
+    .item {
+      padding: 12px 12px;
+      cursor: pointer;
+      font-weight: 980;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .item:hover { background: rgba(148, 163, 184, 0.12); }
+    .item.active { background: var(--primary); color: white; }
+
+    .badge {
+      min-width: 22px;
+      height: 22px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: var(--danger);
+      color: white;
+      font-size: 12px;
+      font-weight: 990;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chat {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 72vh;
+    }
+
+    .chat-header {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chat-header .title { font-weight: 990; }
+    .chat-header small { color: var(--muted); font-weight: 900; }
+
+    .chat-body { flex: 1; overflow: auto; padding: 14px; }
+
+    .msg {
+      max-width: 72%;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(148, 163, 184, 0.16);
+      font-weight: 850;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.me { margin-left: auto; background: var(--primary); color: white; }
+    .msg .meta {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      opacity: 0.92;
+      font-weight: 900;
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .chat-input input { flex: 1; }
+
+    /* =========================================================
+       TASKS / FILES LISTING
+       ========================================================= */
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .task {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: var(--panel2);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .task strong { display: block; font-weight: 990; color: var(--text); }
+    .task small { display: block; color: var(--muted); font-weight: 900; margin-top: 4px; }
+
+    /* =========================================================
+       TOAST
+       ========================================================= */
+    .toastWrap {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+    .toast {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow2);
+      font-weight: 990;
+      max-width: 380px;
+    }
+    .toast small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    /* =========================================================
+       RESPONSIVE TWEAKS
+       ========================================================= */
+    @media(max-width: 640px) {
+      .hero h2 { font-size: 36px; }
+    }
   </style>
 </head>
 
 <body>
 
-<nav>
-  <div class="brand">
-    <div class="logo">TS</div>
-    <div class="brand-title">
-      <h1>TS School</h1>
-      <small>All-in-one student workspace</small>
-    </div>
-  </div>
-  <div class="actions">
-    <div class="pill">👤 <span id="meNameTop"></span></div>
-    <button class="ghost small" id="themeQuick">🌙 Theme</button>
-    <button class="ghost small" id="notifQuick">🔔 Notifications</button>
-  </div>
-</nav>
-
-<section class="hero">
-  <div>
-    <h2>School PMO</h2>
-    <div class="hero-sub">A centralized platform for portals, communication, and student life.</div>
-  </div>
-</section>
-
-<main>
-  <div class="tabs" id="tabs"></div>
-
-  <!-- Dashboard -->
-  <div id="Dashboard" class="section active">
-    <div class="card">
-      <h3>📊 Dashboard</h3>
-      <p class="muted" id="userLine"></p>
-      <div class="row" style="margin-top:10px;">
-        <button class="primary" onclick="openTab('PowerSchool')">🏫 PowerSchool</button>
-        <button class="primary" onclick="openTab('Schoology')">📘 Schoology</button>
-        <button class="primary" onclick="openTab('Messages')">💬 Messages</button>
+  <!-- =========================================================
+       NAV
+       ========================================================= -->
+  <nav>
+    <div class="brand">
+      <div class="logo">TS</div>
+      <div class="brand-title">
+        <h1>TS School</h1>
+        <small>All-in-one student workspace</small>
       </div>
     </div>
 
-    <div class="grid3">
+    <div class="actions">
+      <div class="pill">👤 <span id="meNameTop"></span></div>
+      <button class="ghost small" id="themeBtn">🌙 Theme</button>
+      <button class="ghost small" id="notifBtn">🔔 Notifications</button>
+    </div>
+  </nav>
+
+  <!-- =========================================================
+       HERO (clean, no extra icon clutter)
+       ========================================================= -->
+  <section class="hero">
+    <div>
+      <h2>School PMO</h2>
+      <div class="hero-sub">A centralized platform for portals, communication, and student life.</div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       MAIN
+       ========================================================= -->
+  <main>
+    <div class="tabs" id="tabs"></div>
+
+    <!-- =====================================================
+         DASHBOARD
+         ===================================================== -->
+    <div id="Dashboard" class="section active">
       <div class="card">
-        <h3>🏫 Portals</h3>
-        <p class="muted">Access core school systems.</p>
+        <h3>📊 Dashboard</h3>
+        <p class="muted" id="userLine"></p>
+        <div class="row" style="margin-top: 10px;">
+          <button class="primary" data-jump="PowerSchool">🏫 PowerSchool</button>
+          <button class="primary" data-jump="Schoology">📘 Schoology</button>
+          <button class="primary" data-jump="Messages">💬 Messages</button>
+        </div>
       </div>
+
+      <div class="grid3">
+        <div class="card">
+          <h3>🏫 Portals</h3>
+          <p class="muted">Access PowerSchool and Schoology in one place.</p>
+        </div>
+        <div class="card">
+          <h3>✅ Tasks</h3>
+          <p class="muted">Reminders and deadlines (local).</p>
+        </div>
+        <div class="card">
+          <h3>🤖 AI</h3>
+          <p class="muted">Study tools and assistants.</p>
+          <span class="status">In Progress</span>
+        </div>
+      </div>
+
       <div class="card">
-        <h3>✅ Tasks</h3>
-        <p class="muted">Track homework and deadlines.</p>
-        <span class="status">In Progress</span>
+        <h3>🧩 System Status</h3>
+        <div class="row">
+          <div class="pill">🔥 Firebase: <span id="firebaseStatus">Checking…</span></div>
+          <div class="pill">💬 Messaging: <span id="msgStatus">Ready</span></div>
+          <div class="pill">🌓 Theme: <span id="themeStatus">Light</span></div>
+        </div>
       </div>
+    </div>
+
+    <!-- =====================================================
+         POWERSCHOOL
+         ===================================================== -->
+    <div id="PowerSchool" class="section">
       <div class="card">
-        <h3>🤖 AI</h3>
-        <p class="muted">Study assistance and content tools.</p>
-        <span class="status">In Progress</span>
-      </div>
-    </div>
-  </div>
+        <h3>🏫 PowerSchool</h3>
 
-  <!-- PowerSchool -->
-  <div id="PowerSchool" class="section">
-    <div class="card">
-      <h3>🏫 PowerSchool</h3>
+        <div class="embed-wrap">
+          <div class="embed-top">
+            <div class="embed-left">
+              <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+              <span id="psTitle">PowerSchool</span>
+            </div>
 
-      <div class="embed-wrap">
-        <div class="embed-top">
-          <div class="embed-left">
-            <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-            <span id="psTitle">PowerSchool</span>
+            <div class="embed-controls">
+              <button class="chip small" id="psHomeBtn">🏠 Home</button>
+              <button class="chip small" id="psReloadBtn">↻ Reload</button>
+              <button class="chip small" id="psOpenHereBtn">↗ Open Here</button>
+            </div>
           </div>
-          <div class="embed-controls">
-            <button class="chipbtn small" id="psHomeBtn">Home</button>
-            <button class="chipbtn small" id="psReloadBtn">Reload</button>
-            <button class="chipbtn small" id="psOpenHereBtn">Open Here</button>
-          </div>
-        </div>
-        <iframe id="psFrame"></iframe>
-        <div class="embed-fallback">
-          <div class="left">
-            <strong>Having trouble loading?</strong>
-            <small>Some portals block embedded viewing. “Open Here” loads it in this same tab.</small>
-          </div>
-          <div class="row">
-            <button class="primary" id="psOpenHereBtn2">Open Here</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Schoology -->
-  <div id="Schoology" class="section">
-    <div class="card">
-      <h3>📘 Schoology</h3>
+          <iframe id="psFrame" title="PowerSchool"></iframe>
 
-      <div class="embed-wrap">
-        <div class="embed-top">
-          <div class="embed-left">
-            <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-            <span id="scTitle">Schoology</span>
-          </div>
-          <div class="embed-controls">
-            <button class="chipbtn small" id="scHomeBtn">Home</button>
-            <button class="chipbtn small" id="scReloadBtn">Reload</button>
-            <button class="chipbtn small" id="scOpenHereBtn">Open Here</button>
-          </div>
-        </div>
-        <iframe id="scFrame"></iframe>
-        <div class="embed-fallback">
-          <div class="left">
-            <strong>Having trouble loading?</strong>
-            <small>Some portals block embedded viewing. “Open Here” loads it in this same tab.</small>
-          </div>
-          <div class="row">
-            <button class="primary" id="scOpenHereBtn2">Open Here</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Messages -->
-  <div id="Messages" class="section">
-    <div class="card">
-      <h3>💬 Messages</h3>
-    </div>
-
-    <div class="messages-layout">
-      <div class="card">
-        <div class="row" style="justify-content:space-between;margin-bottom:12px;">
-          <strong style="font-size:14px;">Chats</strong>
-          <div class="row">
-            <button id="addContactBtn" class="chipbtn">Add Contact</button>
-            <button id="newGroupBtn" class="chipbtn">New Group</button>
-          </div>
-        </div>
-
-        <div class="list">
-          <div class="list-header">
-            <span style="font-weight:990;">Contacts & Groups</span>
-            <button class="ghost small" id="refreshChatsBtn">↻</button>
-          </div>
-          <div class="list-body" id="chatList"></div>
-        </div>
-      </div>
-
-      <div class="card" style="padding:0;">
-        <div class="chat">
-          <div class="chat-header">
-            <div>
-              <div class="title" id="chatHeaderTitle">Select a chat</div>
-              <small>You are: <span id="meName"></span></small>
+          <div class="embed-fallback">
+            <div class="left">
+              <strong>If it says “refused to connect”</strong>
+              <small>Some school portals block embedded viewing. “Open Here” loads in this same tab.</small>
             </div>
             <div class="row">
-              <button id="deleteChatBtn" class="danger">Delete Contact</button>
-              <button id="clearChatBtn" class="chipbtn">Clear Chat</button>
+              <button class="primary" id="psOpenHereBtn2">Open Here</button>
             </div>
           </div>
+        </div>
 
-          <div class="chat-body" id="chatMessages"></div>
-
-          <div class="chat-input">
-            <input id="input" placeholder="Type a message..." />
-            <button class="primary" id="sendBtn">Send</button>
+        <div class="card" style="box-shadow:none;margin:18px 0 0;">
+          <h4 style="font-weight:990;margin-bottom:10px;">Portal URL</h4>
+          <div class="row">
+            <input id="psUrlInput" placeholder="https://your-district.powerschool.com" />
+            <button class="primary" id="psSaveBtn">Save</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tasks -->
-  <div id="Tasks" class="section">
-    <div class="card">
-      <h3>✅ Tasks</h3>
-      <span class="status">In Progress</span>
-    </div>
-  </div>
+    <!-- =====================================================
+         SCHOOLOGY
+         ===================================================== -->
+    <div id="Schoology" class="section">
+      <div class="card">
+        <h3>📘 Schoology</h3>
 
-  <!-- Files -->
-  <div id="Files" class="section">
-    <div class="card">
-      <h3>📁 Files</h3>
-      <div class="grid2">
-        <div class="card" style="box-shadow:none;margin:0;">
-          <h4 style="margin:0 0 10px;font-weight:990;">Share A Note</h4>
-          <input id="fileNoteName" placeholder="Name (e.g., Chemistry Notes)" />
-          <textarea id="fileNoteText" placeholder="Paste content here..."></textarea>
-          <button class="primary" id="shareNoteBtn">Share</button>
+        <div class="embed-wrap">
+          <div class="embed-top">
+            <div class="embed-left">
+              <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+              <span id="scTitle">Schoology</span>
+            </div>
+
+            <div class="embed-controls">
+              <button class="chip small" id="scHomeBtn">🏠 Home</button>
+              <button class="chip small" id="scReloadBtn">↻ Reload</button>
+              <button class="chip small" id="scOpenHereBtn">↗ Open Here</button>
+            </div>
+          </div>
+
+          <iframe id="scFrame" title="Schoology"></iframe>
+
+          <div class="embed-fallback">
+            <div class="left">
+              <strong>If it says “refused to connect”</strong>
+              <small>Some portals block embedded viewing. “Open Here” loads in this same tab.</small>
+            </div>
+            <div class="row">
+              <button class="primary" id="scOpenHereBtn2">Open Here</button>
+            </div>
+          </div>
         </div>
 
-        <div class="card" style="box-shadow:none;margin:0;">
-          <h4 style="margin:0 0 10px;font-weight:990;">Share A Small File</h4>
+        <div class="card" style="box-shadow:none;margin:18px 0 0;">
+          <h4 style="font-weight:990;margin-bottom:10px;">Portal URL</h4>
+          <div class="row">
+            <input id="scUrlInput" placeholder="https://awty.schoology.com/home" />
+            <button class="primary" id="scSaveBtn">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         MESSAGES
+         ===================================================== -->
+    <div id="Messages" class="section">
+      <div class="card">
+        <h3>💬 Messages</h3>
+      </div>
+
+      <div class="messages-layout">
+        <!-- LEFT: chat list -->
+        <div class="card">
+          <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+            <strong style="font-size:14px;">Chats</strong>
+            <div class="row">
+              <button id="addContactBtn" class="chip">➕ Add Contact</button>
+              <button id="newGroupBtn" class="chip">👥 New Group</button>
+            </div>
+          </div>
+
+          <div class="list">
+            <div class="list-header">
+              <span style="font-weight:990;">Contacts & Groups</span>
+              <button class="ghost small" id="refreshChatsBtn">↻</button>
+            </div>
+            <div class="list-body" id="chatList"></div>
+          </div>
+
+          <div class="card" style="margin-top:14px;box-shadow:none;">
+            <small class="muted">Local list is saved per device. Messages sync via Firestore.</small>
+          </div>
+        </div>
+
+        <!-- RIGHT: chat -->
+        <div class="card" style="padding:0;">
+          <div class="chat">
+            <div class="chat-header">
+              <div>
+                <div class="title" id="chatHeaderTitle">Select a chat</div>
+                <small>You are: <span id="meName"></span></small>
+              </div>
+              <div class="row">
+                <button id="removeChatBtn" class="danger">🗑 Remove</button>
+                <button id="clearChatBtn" class="chip">Clear</button>
+              </div>
+            </div>
+
+            <div class="chat-body" id="chatMessages"></div>
+
+            <div class="chat-input">
+              <input id="input" placeholder="Type a message..." />
+              <button class="primary" id="sendBtn">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         TASKS (working local reminders)
+         ===================================================== -->
+    <div id="Tasks" class="section">
+      <div class="card">
+        <h3>✅ Tasks</h3>
+        <p class="muted">Local reminders (saved on this Mac). Optional notifications.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>➕ New Task</h3>
+          <label style="font-weight:950;">Title</label>
+          <input id="taskTitle" placeholder="e.g., Math homework" />
+
+          <label style="font-weight:950;margin-top:10px;display:block;">Due (optional)</label>
+          <input id="taskDue" type="datetime-local" />
+
+          <label style="font-weight:950;margin-top:10px;display:block;">Notes</label>
+          <textarea id="taskNotes" placeholder="Details…"></textarea>
+
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="addTaskBtn">Add</button>
+            <button class="chip" id="clearTaskFormBtn">Clear</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📋 Your Tasks</h3>
+          <div id="taskList"></div>
+          <small class="muted">Tasks are local to this device.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         FILES (working: notes + small file via Firestore)
+         ===================================================== -->
+    <div id="Files" class="section">
+      <div class="card">
+        <h3>📁 Files</h3>
+        <p class="muted">Share notes + small files via Firestore for demo purposes.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>📝 Share Note</h3>
+          <label style="font-weight:950;">Name</label>
+          <input id="fileNoteName" placeholder="e.g., Chemistry Notes" />
+          <label style="font-weight:950;margin-top:10px;display:block;">Content</label>
+          <textarea id="fileNoteText" placeholder="Paste content here…"></textarea>
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="shareNoteBtn">Share</button>
+            <button class="chip" id="clearNoteBtn">Clear</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📎 Share Small File</h3>
           <input type="file" id="filePicker" />
-          <button class="primary" id="shareFileBtn">Upload</button>
-          <p class="muted" style="margin-top:10px;">Recommended under ~200KB for demo reliability.</p>
+          <small class="muted">Recommended under ~200KB for reliability.</small>
+          <div class="row" style="margin-top:12px;">
+            <button class="primary" id="shareFileBtn">Upload</button>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h4 style="margin:0 0 10px;font-weight:990;">Shared Items</h4>
+        <h3>📬 Shared Items</h3>
         <div id="sharedList"></div>
       </div>
     </div>
-  </div>
 
-  <!-- AI -->
-  <div id="AI" class="section">
-    <div class="card">
-      <h3>🤖 AI</h3>
-      <span class="status">In Progress</span>
-      <p class="muted" style="margin-top:12px;">Planned: study help, summarization, and visual learning tools.</p>
-    </div>
-  </div>
-
-  <!-- Recreation -->
-  <div id="Recreation" class="section">
-    <div class="card">
-      <h3>🎮 Recreation</h3>
-
-      <div class="embed-wrap">
-        <div class="embed-top">
-          <div class="embed-left">
-            <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-            <span id="recTitle">Recreation</span>
-          </div>
-          <div class="embed-controls">
-            <button class="chipbtn small recPick" data-title="Tubi" data-url="https://tubitv.com">Tubi</button>
-            <button class="chipbtn small recPick" data-title="YouTube" data-url="https://www.youtube.com">YouTube</button>
-            <button class="chipbtn small recPick" data-title="Lichess" data-url="https://lichess.org">Lichess</button>
-            <button class="chipbtn small" id="recReloadBtn">Reload</button>
-          </div>
-        </div>
-        <iframe id="recFrame"></iframe>
+    <!-- =====================================================
+         AI (in progress)
+         ===================================================== -->
+    <div id="AI" class="section">
+      <div class="card">
+        <h3>🤖 AI</h3>
+        <span class="status">In Progress</span>
+        <p class="muted" style="margin-top:12px;">Planned: study assistance, summarization, and visual learning tools.</p>
       </div>
     </div>
-  </div>
 
-  <!-- Social Media -->
-  <div id="SocialMedia" class="section">
-    <div class="card">
-      <h3>🌐 Social Media</h3>
+    <!-- =====================================================
+         RECREATION (embeds with options)
+         ===================================================== -->
+    <div id="Recreation" class="section">
+      <div class="card">
+        <h3>🎮 Recreation</h3>
 
-      <div class="embed-wrap">
-        <div class="embed-top">
-          <div class="embed-left">
-            <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-            <span id="socTitle">Social Media</span>
+        <div class="embed-wrap">
+          <div class="embed-top">
+            <div class="embed-left">
+              <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+              <span id="recTitle">Recreation</span>
+            </div>
+
+            <div class="embed-controls">
+              <button class="chip small recPick" data-title="YouTube" data-url="https://www.youtube.com">YouTube</button>
+              <button class="chip small recPick" data-title="Tubi" data-url="https://tubitv.com">Tubi</button>
+              <button class="chip small recPick" data-title="Lichess" data-url="https://lichess.org">Lichess</button>
+              <button class="chip small" id="recReloadBtn">↻ Reload</button>
+            </div>
           </div>
-          <div class="embed-controls">
-            <button class="chipbtn small socPick" data-title="YouTube" data-url="https://www.youtube.com">YouTube</button>
-            <button class="chipbtn small socPick" data-title="Instagram" data-url="https://www.instagram.com">Instagram</button>
-            <button class="chipbtn small socPick" data-title="Snapchat" data-url="https://web.snapchat.com">Snapchat</button>
-            <button class="chipbtn small" id="socReloadBtn">Reload</button>
-          </div>
-        </div>
-        <iframe id="socFrame"></iframe>
-      </div>
-    </div>
-  </div>
 
-  <!-- VPN -->
-  <div id="VPN" class="section">
-    <div class="card">
-      <h3>🔒 VPN</h3>
-      <span class="status">In Progress</span>
-      <p class="muted" style="margin-top:12px;">Planned: network tools and privacy resources.</p>
-    </div>
-  </div>
+          <iframe id="recFrame" title="Recreation"></iframe>
 
-  <!-- Settings -->
-  <div id="Settings" class="section">
-    <div class="card">
-      <h3>⚙️ Settings</h3>
-
-      <div class="grid2">
-        <div class="card" style="box-shadow:none;margin:0;">
-          <h4 style="margin:0 0 10px;font-weight:990;">Theme</h4>
-          <label style="display:flex;gap:10px;align-items:center;font-weight:950;">
-            <input type="checkbox" id="darkToggle" style="width:18px;height:18px;" />
-            Dark Mode
-          </label>
-        </div>
-
-        <div class="card" style="box-shadow:none;margin:0;">
-          <h4 style="margin:0 0 10px;font-weight:990;">Notifications</h4>
-          <label style="display:flex;gap:10px;align-items:center;font-weight:950;">
-            <input type="checkbox" id="nEnabled" style="width:18px;height:18px;" />
-            Enable Notifications
-          </label>
-
-          <label style="display:flex;gap:10px;align-items:center;font-weight:950;margin-top:10px;">
-            <input type="checkbox" id="nMessages" style="width:18px;height:18px;" />
-            Message Alerts
-          </label>
-
-          <label style="display:flex;gap:10px;align-items:center;font-weight:950;margin-top:10px;">
-            <input type="checkbox" id="nFiles" style="width:18px;height:18px;" />
-            File Alerts
-          </label>
-
-          <div class="row" style="margin-top:12px;">
-            <button class="primary" id="askPermBtn">Ask Permission</button>
-            <button id="testNotifBtn">Test</button>
+          <div class="embed-fallback">
+            <div class="left">
+              <strong>If a site refuses to load</strong>
+              <small>It blocks embedding. Use “Open Here” in the address bar (same tab).</small>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <hr />
+    <!-- =====================================================
+         SOCIAL MEDIA (embeds with options)
+         ===================================================== -->
+    <div id="SocialMedia" class="section">
+      <div class="card">
+        <h3>🌐 Social Media</h3>
 
-      <div class="card" style="box-shadow:none;margin:0;">
-        <h4 style="margin:0 0 10px;font-weight:990;">Portals</h4>
+        <div class="embed-wrap">
+          <div class="embed-top">
+            <div class="embed-left">
+              <div class="dotbar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+              <span id="socTitle">Social Media</span>
+            </div>
+
+            <div class="embed-controls">
+              <button class="chip small socPick" data-title="YouTube" data-url="https://www.youtube.com">YouTube</button>
+              <button class="chip small socPick" data-title="Instagram" data-url="https://www.instagram.com">Instagram</button>
+              <button class="chip small socPick" data-title="Snapchat" data-url="https://web.snapchat.com">Snapchat</button>
+              <button class="chip small" id="socReloadBtn">↻ Reload</button>
+            </div>
+          </div>
+
+          <iframe id="socFrame" title="Social Media"></iframe>
+
+          <div class="embed-fallback">
+            <div class="left">
+              <strong>If a site refuses to load</strong>
+              <small>It blocks embedding. Use “Open Here” in the address bar (same tab).</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         VPN (in progress)
+         ===================================================== -->
+    <div id="VPN" class="section">
+      <div class="card">
+        <h3>🔒 VPN</h3>
+        <span class="status">In Progress</span>
+        <p class="muted" style="margin-top:12px;">Planned: privacy resources and network tools.</p>
+      </div>
+    </div>
+
+    <!-- =====================================================
+         SETTINGS (dark mode + notifications + username + portal URLs)
+         ===================================================== -->
+    <div id="Settings" class="section">
+      <div class="card">
+        <h3>⚙️ Settings</h3>
+
         <div class="grid2">
-          <div>
-            <label style="font-weight:950;">PowerSchool URL</label>
-            <input id="psUrlInput" placeholder="https://your-district.powerschool.com" />
-            <button class="primary" id="psSaveBtn" style="margin-top:10px;">Save</button>
+          <div class="card" style="box-shadow:none;margin:0;">
+            <h4 style="margin:0 0 10px;font-weight:990;">Theme</h4>
+
+            <label style="display:flex;gap:10px;align-items:center;font-weight:950;">
+              <input type="checkbox" id="darkToggle" style="width:18px;height:18px;" />
+              Dark Mode
+            </label>
+
+            <small class="muted" style="display:block;margin-top:10px;">
+              Designed for readability (no black text on black background).
+            </small>
           </div>
-          <div>
-            <label style="font-weight:950;">Schoology URL</label>
-            <input id="scUrlInput" placeholder="https://awty.schoology.com/home" />
-            <button class="primary" id="scSaveBtn" style="margin-top:10px;">Save</button>
+
+          <div class="card" style="box-shadow:none;margin:0;">
+            <h4 style="margin:0 0 10px;font-weight:990;">Notifications</h4>
+
+            <label style="display:flex;gap:10px;align-items:center;font-weight:950;">
+              <input type="checkbox" id="nEnabled" style="width:18px;height:18px;" />
+              Enable Notifications
+            </label>
+
+            <label style="display:flex;gap:10px;align-items:center;font-weight:950;margin-top:10px;">
+              <input type="checkbox" id="nMessages" style="width:18px;height:18px;" />
+              Message Alerts
+            </label>
+
+            <label style="display:flex;gap:10px;align-items:center;font-weight:950;margin-top:10px;">
+              <input type="checkbox" id="nFiles" style="width:18px;height:18px;" />
+              File Alerts
+            </label>
+
+            <div class="row" style="margin-top:12px;">
+              <button class="primary" id="askPermBtn">Ask Permission</button>
+              <button class="chip" id="testNotifBtn">Test</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <hr />
+        <hr />
 
-      <div class="card" style="box-shadow:none;margin:0;">
-        <h4 style="margin:0 0 10px;font-weight:990;">Account</h4>
-        <button class="danger" id="changeNameBtn">Change My Name</button>
+        <div class="card" style="box-shadow:none;margin:0;">
+          <h4 style="margin:0 0 10px;font-weight:990;">Portals</h4>
+          <div class="grid2">
+            <div>
+              <label style="font-weight:950;">PowerSchool URL</label>
+              <input id="psUrlInput2" placeholder="https://your-district.powerschool.com" />
+              <button class="primary" id="psSaveBtn2" style="margin-top:10px;">Save</button>
+            </div>
+            <div>
+              <label style="font-weight:950;">Schoology URL</label>
+              <input id="scUrlInput2" placeholder="https://awty.schoology.com/home" />
+              <button class="primary" id="scSaveBtn2" style="margin-top:10px;">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="card" style="box-shadow:none;margin:0;">
+          <h4 style="margin:0 0 10px;font-weight:990;">Account</h4>
+          <button class="danger" id="changeNameBtn">Change My Name</button>
+        </div>
       </div>
     </div>
-  </div>
-</main>
 
-<div class="toastWrap" id="toastWrap"></div>
+  </main>
 
-<script>
-/* ========================= Utilities ========================= */
-const $ = (id) => document.getElementById(id);
+  <div class="toastWrap" id="toastWrap"></div>
 
-function toast(title, msg){
-  const wrap = $("toastWrap");
-  const div = document.createElement("div");
-  div.className = "toast";
-  div.innerHTML = `${title}<small>${msg}</small>`;
-  wrap.appendChild(div);
-  setTimeout(()=>div.remove(), 3200);
-}
+  <script>
+    /* =========================================================
+       UTILITIES
+       ========================================================= */
+    const $ = (id) => document.getElementById(id);
 
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-/* ========================= Tabs ========================= */
-const TABS = [
-  ["📊","Dashboard"],
-  ["🏫","PowerSchool"],
-  ["📘","Schoology"],
-  ["💬","Messages"],
-  ["✅","Tasks"],
-  ["📁","Files"],
-  ["🤖","AI"],
-  ["🎮","Recreation"],
-  ["🌐","SocialMedia"],
-  ["🔒","VPN"],
-  ["⚙️","Settings"]
-];
-
-const tabsEl = $("tabs");
-TABS.forEach(([icon,name], i)=>{
-  const t = document.createElement("div");
-  t.className = "tab" + (i===0 ? " active" : "");
-  t.textContent = `${icon} ${name === "SocialMedia" ? "Social Media" : name}`;
-  t.dataset.tab = name;
-  t.onclick = () => openTab(name);
-  tabsEl.appendChild(t);
-});
-
-function openTab(name){
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  $(name).classList.add("active");
-  document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add("active");
-}
-
-$("themeQuick").onclick = ()=> openTab("Settings");
-$("notifQuick").onclick = ()=> openTab("Settings");
-
-/* ========================= Theme ========================= */
-const darkToggle = $("darkToggle");
-function applyTheme(isDark){
-  if(isDark) document.documentElement.setAttribute("data-theme","dark");
-  else document.documentElement.removeAttribute("data-theme");
-  localStorage.setItem("ts_dark", isDark ? "true":"false");
-}
-const savedDark = localStorage.getItem("ts_dark")==="true";
-applyTheme(savedDark);
-darkToggle.checked = savedDark;
-darkToggle.onchange = ()=> {
-  applyTheme(darkToggle.checked);
-  toast("Theme", darkToggle.checked ? "Dark mode enabled." : "Light mode enabled.");
-};
-
-/* ========================= Notifications ========================= */
-const notif = JSON.parse(localStorage.getItem("ts_notif") || "null") || {
-  enabled:true,
-  messages:true,
-  files:true
-};
-function saveNotif(){ localStorage.setItem("ts_notif", JSON.stringify(notif)); }
-function syncNotif(){
-  $("nEnabled").checked = notif.enabled;
-  $("nMessages").checked = notif.messages;
-  $("nFiles").checked = notif.files;
-}
-syncNotif();
-
-$("nEnabled").onchange = (e)=>{ notif.enabled = e.target.checked; saveNotif(); };
-$("nMessages").onchange = (e)=>{ notif.messages = e.target.checked; saveNotif(); };
-$("nFiles").onchange = (e)=>{ notif.files = e.target.checked; saveNotif(); };
-
-$("askPermBtn").onclick = async ()=>{
-  if(!("Notification" in window)){ toast("Notifications", "Not supported."); return; }
-  const res = await Notification.requestPermission();
-  toast("Notifications", "Permission: " + res);
-};
-$("testNotifBtn").onclick = ()=>{
-  if(!notif.enabled){ toast("Notifications","Enable notifications first."); return; }
-  if(!("Notification" in window)){ toast("Notifications","Not supported."); return; }
-  if(Notification.permission !== "granted"){ toast("Notifications","Click Ask Permission first."); return; }
-  new Notification("TS School", { body: "Notifications are working." });
-};
-
-function maybeNotify(title, body, type){
-  if(!notif.enabled) return;
-  if(!("Notification" in window)) return;
-  if(Notification.permission !== "granted") return;
-
-  if(type==="messages" && !notif.messages) return;
-  if(type==="files" && !notif.files) return;
-
-  new Notification(title, { body });
-}
-
-/* ========================= User identity ========================= */
-let username = localStorage.getItem("ts_user");
-if(!username){
-  username = prompt("Enter your name EXACTLY (case-sensitive):") || "Student";
-  localStorage.setItem("ts_user", username);
-}
-$("meName").textContent = username;
-$("meNameTop").textContent = username;
-$("userLine").textContent = `Logged in as ${username}`;
-
-/* ========================= Firebase config ========================= */
-if(!window.TS_CONFIG || !window.TS_CONFIG.firebase){
-  toast("Setup Needed", "Missing config.js (window.TS_CONFIG.firebase).");
-  throw new Error("Missing TS_CONFIG.firebase (create config.js)");
-}
-
-firebase.initializeApp(window.TS_CONFIG.firebase);
-const db = firebase.firestore();
-
-/* ========================= Portals ========================= */
-let psUrl = localStorage.getItem("ts_ps_url") || "https://powerschool.com";
-let scUrl = localStorage.getItem("ts_sc_url") || "https://awty.schoology.com/home";
-$("psUrlInput").value = psUrl;
-$("scUrlInput").value = scUrl;
-
-function loadPortalFrames(){
-  $("psFrame").src = psUrl;
-  $("scFrame").src = scUrl;
-}
-loadPortalFrames();
-
-$("psHomeBtn").onclick = ()=> $("psFrame").src = psUrl;
-$("psReloadBtn").onclick = ()=> $("psFrame").src = psUrl;
-$("scHomeBtn").onclick = ()=> $("scFrame").src = scUrl;
-$("scReloadBtn").onclick = ()=> $("scFrame").src = scUrl;
-
-function openHere(url){ window.location.href = url; }
-
-$("psOpenHereBtn").onclick = ()=> openHere(psUrl);
-$("psOpenHereBtn2").onclick = ()=> openHere(psUrl);
-$("scOpenHereBtn").onclick = ()=> openHere(scUrl);
-$("scOpenHereBtn2").onclick = ()=> openHere(scUrl);
-
-$("psSaveBtn").onclick = ()=>{
-  const v = $("psUrlInput").value.trim();
-  if(!v) return;
-  psUrl = v;
-  localStorage.setItem("ts_ps_url", psUrl);
-  $("psFrame").src = psUrl;
-  toast("PowerSchool", "Saved.");
-};
-$("scSaveBtn").onclick = ()=>{
-  const v = $("scUrlInput").value.trim();
-  if(!v) return;
-  scUrl = v;
-  localStorage.setItem("ts_sc_url", scUrl);
-  $("scFrame").src = scUrl;
-  toast("Schoology", "Saved.");
-};
-
-/* ========================= Recreation embeds ========================= */
-let recCurrent = "https://tubitv.com";
-function loadRec(title, url){
-  $("recTitle").textContent = title;
-  $("recFrame").src = url;
-}
-document.querySelectorAll(".recPick").forEach(btn=>{
-  btn.onclick = ()=> loadRec(btn.dataset.title, btn.dataset.url);
-});
-$("recReloadBtn").onclick = ()=> loadRec($("recTitle").textContent || "Recreation", $("recFrame").src || recCurrent);
-loadRec("Tubi", recCurrent);
-
-/* ========================= Social embeds ========================= */
-let socCurrent = "https://www.youtube.com";
-function loadSoc(title, url){
-  $("socTitle").textContent = title;
-  $("socFrame").src = url;
-}
-document.querySelectorAll(".socPick").forEach(btn=>{
-  btn.onclick = ()=> loadSoc(btn.dataset.title, btn.dataset.url);
-});
-$("socReloadBtn").onclick = ()=> loadSoc($("socTitle").textContent || "Social Media", $("socFrame").src || socCurrent);
-loadSoc("YouTube", socCurrent);
-
-/* ========================= Messages (DMs + Groups) ========================= */
-let chats = JSON.parse(localStorage.getItem("ts_chats") || "null") || ["Alice","Bob","group:Study Group"];
-let currentChat = null;
-let unsubscribe = null;
-
-function saveChats(){ localStorage.setItem("ts_chats", JSON.stringify(chats)); }
-
-function chatIdFor(name){
-  if(name.startsWith("group:")) return name;
-  return [username, name].sort().join("_");
-}
-
-function renderChatList(){
-  const list = $("chatList");
-  list.innerHTML = "";
-  chats.forEach(name=>{
-    const row = document.createElement("div");
-    row.className = "item";
-    row.dataset.name = name;
-
-    const left = document.createElement("span");
-    left.textContent = name.startsWith("group:") ? (name.replace("group:","")) : name;
-
-    row.appendChild(left);
-    row.onclick = ()=> openChat(name);
-    list.appendChild(row);
-  });
-}
-
-function setActiveRow(name){
-  document.querySelectorAll("#chatList .item").forEach(i=>i.classList.remove("active"));
-  const sel = document.querySelector(`#chatList .item[data-name="${CSS.escape(name)}"]`);
-  if(sel) sel.classList.add("active");
-}
-
-function renderMessage(m){
-  const div = document.createElement("div");
-  const isMe = (m.sender === username);
-  div.className = "msg" + (isMe ? " me":"");
-  div.innerHTML = `
-    <div>${escapeHtml(m.text)}</div>
-    <span class="meta">${escapeHtml(m.sender)} • ${new Date(m.time||Date.now()).toLocaleTimeString()}</span>
-  `;
-  $("chatMessages").appendChild(div);
-}
-
-function openChat(name){
-  currentChat = name;
-  setActiveRow(name);
-
-  $("chatHeaderTitle").textContent = name.startsWith("group:") ? ("Group: " + name.replace("group:","")) : name;
-
-  $("chatMessages").innerHTML = "";
-  if(unsubscribe) unsubscribe();
-
-  const cid = chatIdFor(name);
-
-  unsubscribe = db.collection("messages")
-    .where("chat","==",cid)
-    .onSnapshot(snap=>{
-      const msgs = [];
-      snap.forEach(doc => msgs.push(doc.data()));
-      msgs.sort((a,b)=> (a.time||0) - (b.time||0));
-
-      const box = $("chatMessages");
-      box.innerHTML = "";
-      msgs.forEach(renderMessage);
-      box.scrollTop = box.scrollHeight;
-    }, err=>{
-      console.error(err);
-      toast("Messages", err.message || "Error loading messages");
-    });
-}
-
-async function sendMessage(){
-  if(!currentChat){ toast("Messages","Select a chat first."); return; }
-  const input = $("input");
-  const text = input.value.trim();
-  if(!text) return;
-
-  const cid = chatIdFor(currentChat);
-
-  try{
-    await db.collection("messages").add({
-      chat: cid,
-      sender: username,
-      text,
-      time: Date.now()
-    });
-    input.value = "";
-  }catch(e){
-    console.error(e);
-    toast("Messages", e.message || "Send failed");
-  }
-}
-
-$("sendBtn").onclick = sendMessage;
-$("input").addEventListener("keydown", (e)=>{ if(e.key==="Enter") sendMessage(); });
-
-$("addContactBtn").onclick = ()=>{
-  const name = prompt("Contact name:");
-  if(!name) return;
-  if(name === username){ toast("Contacts","You can’t add yourself."); return; }
-  if(!chats.includes(name)){
-    chats.push(name);
-    saveChats();
-    renderChatList();
-    toast("Contacts","Added.");
-  }
-};
-
-$("newGroupBtn").onclick = ()=>{
-  const g = prompt("Group name:");
-  if(!g) return;
-  const id = "group:" + g.trim();
-  if(!chats.includes(id)){
-    chats.push(id);
-    saveChats();
-    renderChatList();
-    toast("Groups","Created.");
-  }
-};
-
-$("refreshChatsBtn").onclick = ()=>{
-  renderChatList();
-  toast("Chats","Refreshed.");
-};
-
-$("deleteChatBtn").onclick = ()=>{
-  if(!currentChat) return;
-  if(currentChat.startsWith("group:")){
-    toast("Groups","Remove groups from your list manually in code or reset local storage.");
-    return;
-  }
-  if(!confirm("Remove this contact from your list?")) return;
-  chats = chats.filter(x => x !== currentChat);
-  saveChats();
-  currentChat = null;
-  $("chatHeaderTitle").textContent = "Select a chat";
-  $("chatMessages").innerHTML = "";
-  renderChatList();
-};
-
-$("clearChatBtn").onclick = async ()=>{
-  if(!currentChat) return;
-  if(!confirm("Clear this chat for everyone?")) return;
-
-  const cid = chatIdFor(currentChat);
-  const snap = await db.collection("messages").where("chat","==",cid).get();
-  const batch = db.batch();
-  snap.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  toast("Messages","Cleared.");
-};
-
-renderChatList();
-
-/* ========================= Files (notes + small files) ========================= */
-async function shareNote(){
-  const name = $("fileNoteName").value.trim();
-  const text = $("fileNoteText").value.trim();
-  if(!name || !text){ toast("Files","Name and content required."); return; }
-
-  await db.collection("shared").add({
-    type:"note",
-    name,
-    text,
-    by: username,
-    time: Date.now()
-  });
-
-  $("fileNoteName").value = "";
-  $("fileNoteText").value = "";
-  toast("Files","Shared.");
-  maybeNotify("TS School", "A note was shared.", "files");
-}
-$("shareNoteBtn").onclick = shareNote;
-
-async function shareSmallFile(){
-  const f = $("filePicker").files?.[0];
-  if(!f){ toast("Files","Pick a file first."); return; }
-  if(f.size > 200 * 1024){
-    toast("Files","Use a file under ~200KB for demo.");
-    return;
-  }
-
-  const b64 = await new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = ()=> resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(f);
-  });
-
-  await db.collection("shared").add({
-    type:"file",
-    name: f.name,
-    mime: f.type || "application/octet-stream",
-    dataUrl: b64,
-    by: username,
-    time: Date.now()
-  });
-
-  $("filePicker").value = "";
-  toast("Files","Uploaded.");
-  maybeNotify("TS School", "A file was shared.", "files");
-}
-$("shareFileBtn").onclick = shareSmallFile;
-
-function renderShared(items){
-  const wrap = $("sharedList");
-  wrap.innerHTML = "";
-  items.forEach(it=>{
-    const div = document.createElement("div");
-    div.className = "task";
-
-    if(it.type === "note"){
-      div.innerHTML = `
-        <div>
-          <strong>${escapeHtml(it.name)}</strong>
-          <small>${escapeHtml(it.by)} • ${new Date(it.time).toLocaleString()}</small>
-          <small>${escapeHtml(it.text).slice(0,220)}${it.text.length>220?"…":""}</small>
-        </div>
-        <div class="row">
-          <button class="chipbtn" onclick="alert(${JSON.stringify(it.text)})">View</button>
-        </div>
-      `;
-    }else{
-      div.innerHTML = `
-        <div>
-          <strong>${escapeHtml(it.name)}</strong>
-          <small>${escapeHtml(it.by)} • ${new Date(it.time).toLocaleString()}</small>
-          <small>${escapeHtml(it.mime)}</small>
-        </div>
-        <div class="row">
-          <a download="${escapeHtml(it.name)}" href="${it.dataUrl}">
-            <button class="chipbtn">Download</button>
-          </a>
-        </div>
-      `;
+    function toast(title, msg) {
+      const wrap = $("toastWrap");
+      const div = document.createElement("div");
+      div.className = "toast";
+      div.innerHTML = `${escapeHtml(title)}<small>${escapeHtml(msg)}</small>`;
+      wrap.appendChild(div);
+      setTimeout(() => div.remove(), 3400);
     }
 
-    wrap.appendChild(div);
-  });
-}
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-db.collection("shared").orderBy("time","desc").limit(25).onSnapshot(snap=>{
-  const items=[];
-  snap.forEach(d=>items.push(d.data()));
-  renderShared(items);
-});
+    function fmtTime(ts) {
+      return new Date(ts || Date.now()).toLocaleTimeString();
+    }
 
-/* ========================= Account ========================= */
-$("changeNameBtn").onclick = ()=>{
-  localStorage.removeItem("ts_user");
-  location.reload();
-};
+    function fmtDateTime(ts) {
+      return new Date(ts || Date.now()).toLocaleString();
+    }
 
-/* ========================= Startup ========================= */
-toast("TS School", "Ready.");
-</script>
+    /* =========================================================
+       APP START (ensure DOM is ready)
+       ========================================================= */
+    document.addEventListener("DOMContentLoaded", () => {
+
+      /* =======================================================
+         TAB MODEL
+         ======================================================= */
+      const TABS = [
+        ["📊", "Dashboard", "Dashboard"],
+        ["🏫", "PowerSchool", "PowerSchool"],
+        ["📘", "Schoology", "Schoology"],
+        ["💬", "Messages", "Messages"],
+        ["✅", "Tasks", "Tasks"],
+        ["📁", "Files", "Files"],
+        ["🤖", "AI", "AI"],
+        ["🎮", "Recreation", "Recreation"],
+        ["🌐", "Social Media", "SocialMedia"],
+        ["🔒", "VPN", "VPN"],
+        ["⚙️", "Settings", "Settings"]
+      ];
+
+      const tabsEl = $("tabs");
+
+      TABS.forEach(([icon, label, id], i) => {
+        const t = document.createElement("div");
+        t.className = "tab" + (i === 0 ? " active" : "");
+        t.dataset.tab = id;
+        t.textContent = `${icon} ${label}`;
+        t.addEventListener("click", () => openTab(id));
+        tabsEl.appendChild(t);
+      });
+
+      function openTab(id) {
+        document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        $(id).classList.add("active");
+        document.querySelector(`.tab[data-tab="${id}"]`)?.classList.add("active");
+      }
+
+      document.querySelectorAll("[data-jump]").forEach(btn => {
+        btn.addEventListener("click", () => openTab(btn.getAttribute("data-jump")));
+      });
+
+      /* =======================================================
+         THEME
+         ======================================================= */
+      const darkToggle = $("darkToggle");
+      function applyTheme(isDark) {
+        if (isDark) document.documentElement.setAttribute("data-theme", "dark");
+        else document.documentElement.removeAttribute("data-theme");
+        localStorage.setItem("ts_dark", isDark ? "true" : "false");
+        $("themeStatus").textContent = isDark ? "Dark" : "Light";
+      }
+
+      const savedDark = localStorage.getItem("ts_dark") === "true";
+      applyTheme(savedDark);
+      darkToggle.checked = savedDark;
+
+      $("themeBtn").addEventListener("click", () => {
+        darkToggle.checked = !darkToggle.checked;
+        applyTheme(darkToggle.checked);
+      });
+
+      darkToggle.addEventListener("change", () => {
+        applyTheme(darkToggle.checked);
+        toast("Theme", darkToggle.checked ? "Dark mode enabled." : "Light mode enabled.");
+      });
+
+      /* =======================================================
+         NOTIFICATIONS
+         ======================================================= */
+      const notif = JSON.parse(localStorage.getItem("ts_notif") || "null") || {
+        enabled: true,
+        messages: true,
+        files: true
+      };
+
+      function saveNotif() {
+        localStorage.setItem("ts_notif", JSON.stringify(notif));
+      }
+
+      function syncNotifUI() {
+        $("nEnabled").checked = notif.enabled;
+        $("nMessages").checked = notif.messages;
+        $("nFiles").checked = notif.files;
+      }
+
+      syncNotifUI();
+
+      $("notifBtn").addEventListener("click", () => {
+        openTab("Settings");
+        toast("Notifications", "Manage notification settings here.");
+      });
+
+      $("nEnabled").addEventListener("change", (e) => { notif.enabled = e.target.checked; saveNotif(); });
+      $("nMessages").addEventListener("change", (e) => { notif.messages = e.target.checked; saveNotif(); });
+      $("nFiles").addEventListener("change", (e) => { notif.files = e.target.checked; saveNotif(); });
+
+      $("askPermBtn").addEventListener("click", async () => {
+        if (!("Notification" in window)) {
+          toast("Notifications", "Not supported in this browser.");
+          return;
+        }
+        const res = await Notification.requestPermission();
+        toast("Notifications", "Permission: " + res);
+      });
+
+      $("testNotifBtn").addEventListener("click", () => {
+        if (!notif.enabled) { toast("Notifications", "Enable notifications first."); return; }
+        if (!("Notification" in window)) { toast("Notifications", "Not supported."); return; }
+        if (Notification.permission !== "granted") { toast("Notifications", "Click Ask Permission first."); return; }
+        new Notification("TS School", { body: "Notifications are working." });
+      });
+
+      function maybeNotify(title, body, type) {
+        if (!notif.enabled) return;
+        if (!("Notification" in window)) return;
+        if (Notification.permission !== "granted") return;
+        if (type === "messages" && !notif.messages) return;
+        if (type === "files" && !notif.files) return;
+        new Notification(title, { body });
+      }
+
+      /* =======================================================
+         USERNAME
+         ======================================================= */
+      let username = localStorage.getItem("ts_user");
+      if (!username) {
+        username = prompt("Enter your name EXACTLY (case-sensitive):") || "Student";
+        localStorage.setItem("ts_user", username);
+      }
+
+      $("meName").textContent = username;
+      $("meNameTop").textContent = username;
+      $("userLine").textContent = `Logged in as ${username}`;
+
+      $("changeNameBtn").addEventListener("click", () => {
+        localStorage.removeItem("ts_user");
+        location.reload();
+      });
+
+      /* =======================================================
+         FIREBASE INIT (REAL FIX: validate config, show status)
+         ======================================================= */
+      let db = null;
+
+      try {
+        if (!window.TS_CONFIG || !window.TS_CONFIG.firebase) {
+          $("firebaseStatus").textContent = "Missing config.js";
+          toast("Setup", "Missing config.js (TS_CONFIG.firebase).");
+        } else {
+          firebase.initializeApp(window.TS_CONFIG.firebase);
+          db = firebase.firestore();
+          $("firebaseStatus").textContent = "Connected";
+        }
+      } catch (e) {
+        console.error(e);
+        $("firebaseStatus").textContent = "Error";
+        toast("Firebase Error", e.message || String(e));
+      }
+
+      /* =======================================================
+         PORTALS (embed + safe fallback)
+         ======================================================= */
+      let psUrl = localStorage.getItem("ts_ps_url") || "https://powerschool.com";
+      let scUrl = localStorage.getItem("ts_sc_url") || "https://awty.schoology.com/home";
+
+      // Two URL inputs (one in page, one in settings) kept in sync
+      $("psUrlInput").value = psUrl;
+      $("scUrlInput").value = scUrl;
+      $("psUrlInput2").value = psUrl;
+      $("scUrlInput2").value = scUrl;
+
+      function loadPortals() {
+        $("psFrame").src = psUrl;
+        $("scFrame").src = scUrl;
+      }
+      loadPortals();
+
+      function savePS(v) {
+        psUrl = v;
+        localStorage.setItem("ts_ps_url", psUrl);
+        $("psUrlInput").value = psUrl;
+        $("psUrlInput2").value = psUrl;
+        $("psFrame").src = psUrl;
+        toast("PowerSchool", "Saved.");
+      }
+      function saveSC(v) {
+        scUrl = v;
+        localStorage.setItem("ts_sc_url", scUrl);
+        $("scUrlInput").value = scUrl;
+        $("scUrlInput2").value = scUrl;
+        $("scFrame").src = scUrl;
+        toast("Schoology", "Saved.");
+      }
+
+      $("psSaveBtn").addEventListener("click", () => {
+        const v = $("psUrlInput").value.trim();
+        if (v) savePS(v);
+      });
+      $("scSaveBtn").addEventListener("click", () => {
+        const v = $("scUrlInput").value.trim();
+        if (v) saveSC(v);
+      });
+
+      $("psSaveBtn2").addEventListener("click", () => {
+        const v = $("psUrlInput2").value.trim();
+        if (v) savePS(v);
+      });
+      $("scSaveBtn2").addEventListener("click", () => {
+        const v = $("scUrlInput2").value.trim();
+        if (v) saveSC(v);
+      });
+
+      $("psHomeBtn").addEventListener("click", () => $("psFrame").src = psUrl);
+      $("psReloadBtn").addEventListener("click", () => $("psFrame").src = $("psFrame").src);
+
+      $("scHomeBtn").addEventListener("click", () => $("scFrame").src = scUrl);
+      $("scReloadBtn").addEventListener("click", () => $("scFrame").src = $("scFrame").src);
+
+      function openHere(url) { window.location.href = url; }
+
+      $("psOpenHereBtn").addEventListener("click", () => openHere(psUrl));
+      $("psOpenHereBtn2").addEventListener("click", () => openHere(psUrl));
+      $("scOpenHereBtn").addEventListener("click", () => openHere(scUrl));
+      $("scOpenHereBtn2").addEventListener("click", () => openHere(scUrl));
+
+      /* =======================================================
+         RECREATION + SOCIAL EMBEDS
+         ======================================================= */
+      function loadRec(title, url) {
+        $("recTitle").textContent = title;
+        $("recFrame").src = url;
+      }
+      document.querySelectorAll(".recPick").forEach(btn => {
+        btn.addEventListener("click", () => loadRec(btn.dataset.title, btn.dataset.url));
+      });
+      $("recReloadBtn").addEventListener("click", () => $("recFrame").src = $("recFrame").src);
+      loadRec("YouTube", "https://www.youtube.com");
+
+      function loadSoc(title, url) {
+        $("socTitle").textContent = title;
+        $("socFrame").src = url;
+      }
+      document.querySelectorAll(".socPick").forEach(btn => {
+        btn.addEventListener("click", () => loadSoc(btn.dataset.title, btn.dataset.url));
+      });
+      $("socReloadBtn").addEventListener("click", () => $("socFrame").src = $("socFrame").src);
+      loadSoc("YouTube", "https://www.youtube.com");
+
+      /* =======================================================
+         TASKS (local)
+         ======================================================= */
+      let tasks = JSON.parse(localStorage.getItem("ts_tasks") || "[]");
+
+      function saveTasks() {
+        localStorage.setItem("ts_tasks", JSON.stringify(tasks));
+      }
+
+      function renderTasks() {
+        const wrap = $("taskList");
+        wrap.innerHTML = "";
+
+        if (tasks.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "task";
+          empty.innerHTML = `<div><strong>No tasks yet</strong><small>Add one on the left.</small></div>`;
+          wrap.appendChild(empty);
+          return;
+        }
+
+        tasks
+          .slice()
+          .sort((a, b) => (a.due || 0) - (b.due || 0))
+          .forEach((t, idx) => {
+            const div = document.createElement("div");
+            div.className = "task";
+
+            const dueText = t.due ? fmtDateTime(t.due) : "No due date";
+
+            div.innerHTML = `
+              <div>
+                <strong>${escapeHtml(t.title)}</strong>
+                <small>${escapeHtml(dueText)}</small>
+                ${t.notes ? `<small>${escapeHtml(t.notes).slice(0, 220)}${t.notes.length > 220 ? "…" : ""}</small>` : ""}
+              </div>
+              <div class="row">
+                <button class="chip small" data-view="${idx}">View</button>
+                <button class="danger small" data-del="${idx}">Delete</button>
+              </div>
+            `;
+
+            wrap.appendChild(div);
+          });
+
+        wrap.querySelectorAll("[data-view]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-view"));
+            const t = tasks[idx];
+            alert(`Title: ${t.title}\n\nDue: ${t.due ? fmtDateTime(t.due) : "None"}\n\nNotes:\n${t.notes || ""}`);
+          });
+        });
+
+        wrap.querySelectorAll("[data-del]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.getAttribute("data-del"));
+            tasks.splice(idx, 1);
+            saveTasks();
+            renderTasks();
+          });
+        });
+      }
+
+      $("addTaskBtn").addEventListener("click", () => {
+        const title = $("taskTitle").value.trim();
+        const dueRaw = $("taskDue").value;
+        const notes = $("taskNotes").value.trim();
+
+        if (!title) {
+          toast("Tasks", "Please enter a title.");
+          return;
+        }
+
+        const due = dueRaw ? new Date(dueRaw).getTime() : null;
+
+        tasks.push({ title, due, notes, created: Date.now() });
+        saveTasks();
+        renderTasks();
+
+        $("taskTitle").value = "";
+        $("taskDue").value = "";
+        $("taskNotes").value = "";
+
+        toast("Tasks", "Task added.");
+
+        if (due && notif.enabled && notif.messages) {
+          // Optional: you could schedule real reminders later;
+          // for competition, it's enough to store tasks and show due dates.
+        }
+      });
+
+      $("clearTaskFormBtn").addEventListener("click", () => {
+        $("taskTitle").value = "";
+        $("taskDue").value = "";
+        $("taskNotes").value = "";
+      });
+
+      renderTasks();
+
+      /* =======================================================
+         FILES (Firestore shared collection)
+         ======================================================= */
+      function renderShared(items) {
+        const wrap = $("sharedList");
+        wrap.innerHTML = "";
+
+        if (items.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "task";
+          empty.innerHTML = `<div><strong>No shared items</strong><small>Share a note or file above.</small></div>`;
+          wrap.appendChild(empty);
+          return;
+        }
+
+        items.forEach(it => {
+          const div = document.createElement("div");
+          div.className = "task";
+
+          if (it.type === "note") {
+            div.innerHTML = `
+              <div>
+                <strong>${escapeHtml(it.name)}</strong>
+                <small>${escapeHtml(it.by)} • ${fmtDateTime(it.time)}</small>
+                <small>${escapeHtml(it.text).slice(0, 220)}${it.text.length > 220 ? "…" : ""}</small>
+              </div>
+              <div class="row">
+                <button class="chip small">View</button>
+              </div>
+            `;
+            div.querySelector("button").addEventListener("click", () => {
+              alert(`${it.name}\n\nBy: ${it.by}\nTime: ${fmtDateTime(it.time)}\n\n${it.text}`);
+            });
+          } else if (it.type === "file") {
+            div.innerHTML = `
+              <div>
+                <strong>${escapeHtml(it.name)}</strong>
+                <small>${escapeHtml(it.by)} • ${fmtDateTime(it.time)}</small>
+                <small>${escapeHtml(it.mime || "file")}</small>
+              </div>
+              <div class="row">
+                <a download="${escapeHtml(it.name)}" href="${it.dataUrl}">
+                  <button class="chip small">Download</button>
+                </a>
+              </div>
+            `;
+          }
+
+          wrap.appendChild(div);
+        });
+      }
+
+      $("shareNoteBtn").addEventListener("click", async () => {
+        if (!db) { toast("Files", "Firebase not connected."); return; }
+
+        const name = $("fileNoteName").value.trim();
+        const text = $("fileNoteText").value.trim();
+        if (!name || !text) { toast("Files", "Name and content required."); return; }
+
+        await db.collection("shared").add({
+          type: "note",
+          name,
+          text,
+          by: username,
+          time: Date.now()
+        });
+
+        $("fileNoteName").value = "";
+        $("fileNoteText").value = "";
+        toast("Files", "Note shared.");
+        maybeNotify("TS School", "A note was shared.", "files");
+      });
+
+      $("clearNoteBtn").addEventListener("click", () => {
+        $("fileNoteName").value = "";
+        $("fileNoteText").value = "";
+      });
+
+      $("shareFileBtn").addEventListener("click", async () => {
+        if (!db) { toast("Files", "Firebase not connected."); return; }
+
+        const f = $("filePicker").files?.[0];
+        if (!f) { toast("Files", "Pick a file first."); return; }
+        if (f.size > 200 * 1024) { toast("Files", "Use a file under ~200KB for demo."); return; }
+
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = reject;
+          reader.readAsDataURL(f);
+        });
+
+        await db.collection("shared").add({
+          type: "file",
+          name: f.name,
+          mime: f.type || "application/octet-stream",
+          dataUrl,
+          by: username,
+          time: Date.now()
+        });
+
+        $("filePicker").value = "";
+        toast("Files", "File uploaded.");
+        maybeNotify("TS School", "A file was shared.", "files");
+      });
+
+      if (db) {
+        // Real-time feed of shared items
+        db.collection("shared")
+          .orderBy("time", "desc")
+          .limit(25)
+          .onSnapshot(snap => {
+            const items = [];
+            snap.forEach(d => items.push(d.data()));
+            renderShared(items);
+          }, err => {
+            console.error(err);
+            toast("Files", err.message || "Error reading shared items.");
+          });
+      }
+
+      /* =======================================================
+         MESSAGES (REAL FIX: consistent model + wiring)
+         ======================================================= */
+      const chatListEl = $("chatList");
+      const chatMessagesEl = $("chatMessages");
+      const chatHeaderTitleEl = $("chatHeaderTitle");
+      const inputEl = $("input");
+      const sendBtn = $("sendBtn");
+
+      // Local per-device list (names + groups)
+      let chats = JSON.parse(localStorage.getItem("ts_chats") || "null") || [
+        "Alice",
+        "Bob",
+        "group:Study Group"
+      ];
+
+      // Keep: DMs + group chats
+      // DMs chatId = sorted user pair
+      // Group chatId = group:<name> exactly
+      let currentChat = null;
+      let unsubscribeMessages = null;
+
+      function saveChats() {
+        localStorage.setItem("ts_chats", JSON.stringify(chats));
+      }
+
+      function chatIdFor(label) {
+        if (label.startsWith("group:")) return label; // group id is literal
+        return [username, label].sort().join("_");
+      }
+
+      function displayLabel(label) {
+        return label.startsWith("group:") ? label.replace("group:", "") : label;
+      }
+
+      function setActiveChatRow(label) {
+        document.querySelectorAll("#chatList .item").forEach(i => i.classList.remove("active"));
+        const sel = document.querySelector(`#chatList .item[data-name="${CSS.escape(label)}"]`);
+        if (sel) sel.classList.add("active");
+      }
+
+      function renderChatList() {
+        chatListEl.innerHTML = "";
+
+        chats.forEach(label => {
+          const row = document.createElement("div");
+          row.className = "item";
+          row.dataset.name = label;
+
+          const left = document.createElement("span");
+          left.textContent = displayLabel(label);
+
+          const right = document.createElement("span");
+          right.className = "badge";
+          right.style.display = "none"; // (optional unread later)
+
+          row.appendChild(left);
+          row.appendChild(right);
+
+          row.addEventListener("click", () => openChat(label));
+          chatListEl.appendChild(row);
+        });
+      }
+
+      function clearMessagesUI() {
+        chatMessagesEl.innerHTML = "";
+      }
+
+      function renderMessage(m) {
+        const div = document.createElement("div");
+        const isMe = (m.sender === username);
+
+        div.className = "msg" + (isMe ? " me" : "");
+        div.innerHTML = `
+          <div>${escapeHtml(m.text)}</div>
+          <span class="meta">${escapeHtml(m.sender)} • ${fmtTime(m.time)}</span>
+        `;
+        chatMessagesEl.appendChild(div);
+      }
+
+      function openChat(label) {
+        if (!db) {
+          toast("Messages", "Firebase not connected.");
+          return;
+        }
+
+        currentChat = label;
+        setActiveChatRow(label);
+
+        const isGroup = label.startsWith("group:");
+        chatHeaderTitleEl.textContent = isGroup ? ("Group: " + displayLabel(label)) : displayLabel(label);
+
+        clearMessagesUI();
+
+        // Remove old listener
+        if (unsubscribeMessages) unsubscribeMessages();
+
+        const cid = chatIdFor(label);
+
+        // REAL-TIME listener (no orderBy index requirement; we sort client-side)
+        unsubscribeMessages = db.collection("messages")
+          .where("chatId", "==", cid)
+          .onSnapshot(
+            snap => {
+              const msgs = [];
+              snap.forEach(doc => msgs.push(doc.data()));
+              msgs.sort((a, b) => (a.time || 0) - (b.time || 0));
+
+              clearMessagesUI();
+              msgs.forEach(renderMessage);
+
+              chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+              $("msgStatus").textContent = "Connected";
+            },
+            err => {
+              console.error(err);
+              toast("Messages Error", err.message || "Listener error.");
+              $("msgStatus").textContent = "Error";
+            }
+          );
+      }
+
+      async function sendMessage() {
+        if (!db) { toast("Messages", "Firebase not connected."); return; }
+        if (!currentChat) { toast("Messages", "Select a chat first."); return; }
+
+        const text = inputEl.value.trim();
+        if (!text) return;
+
+        const cid = chatIdFor(currentChat);
+
+        try {
+          await db.collection("messages").add({
+            chatId: cid,
+            sender: username,
+            text,
+            time: Date.now()
+          });
+
+          inputEl.value = "";
+          maybeNotify("TS School", "Message sent.", "messages");
+        } catch (e) {
+          console.error(e);
+          toast("Send Failed", e.message || String(e));
+        }
+      }
+
+      function addContact() {
+        const name = prompt("Contact name (must match exactly):");
+        if (!name) return;
+        if (name === username) { toast("Contacts", "You can’t add yourself."); return; }
+        if (!chats.includes(name)) {
+          chats.push(name);
+          saveChats();
+          renderChatList();
+          toast("Contacts", "Added.");
+        }
+      }
+
+      function addGroup() {
+        const groupName = prompt("Group name:");
+        if (!groupName) return;
+        const id = "group:" + groupName.trim();
+        if (!chats.includes(id)) {
+          chats.push(id);
+          saveChats();
+          renderChatList();
+          toast("Groups", "Created.");
+        }
+      }
+
+      function removeCurrentChatFromList() {
+        if (!currentChat) { toast("Remove", "Select a chat first."); return; }
+        if (!confirm("Remove from your list? (Does not delete messages for everyone)")) return;
+
+        chats = chats.filter(x => x !== currentChat);
+        saveChats();
+        renderChatList();
+
+        currentChat = null;
+        chatHeaderTitleEl.textContent = "Select a chat";
+        clearMessagesUI();
+      }
+
+      async function clearCurrentChatForEveryone() {
+        if (!db) { toast("Messages", "Firebase not connected."); return; }
+        if (!currentChat) { toast("Messages", "Select a chat first."); return; }
+
+        if (!confirm("Clear this chat for everyone?")) return;
+
+        const cid = chatIdFor(currentChat);
+
+        try {
+          const snap = await db.collection("messages").where("chatId", "==", cid).get();
+          const batch = db.batch();
+          snap.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+          toast("Messages", "Cleared.");
+        } catch (e) {
+          console.error(e);
+          toast("Clear Failed", e.message || String(e));
+        }
+      }
+
+      $("addContactBtn").addEventListener("click", addContact);
+      $("newGroupBtn").addEventListener("click", addGroup);
+      $("refreshChatsBtn").addEventListener("click", () => { renderChatList(); toast("Chats", "Refreshed."); });
+      $("removeChatBtn").addEventListener("click", removeCurrentChatFromList);
+      $("clearChatBtn").addEventListener("click", clearCurrentChatForEveryone);
+
+      sendBtn.addEventListener("click", sendMessage);
+      inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+
+      renderChatList();
+
+      /* =======================================================
+         FINAL STARTUP TOAST
+         ======================================================= */
+      toast("TS School", "Ready.");
+    });
+  </script>
+
 </body>
 </html>
